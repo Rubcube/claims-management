@@ -121,11 +121,6 @@ export default function ActivityDetailPage({ params }: ActivityDetailPageProps) 
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="outline" size="icon" asChild>
-              <Link href="/activities">
-                <ArrowLeft className="w-4 h-4" />
-              </Link>
-            </Button>
             <div>
               <h1 className="text-3xl font-bold text-foreground">Activity Details</h1>
               <p className="text-muted-foreground">View and manage activity information</p>

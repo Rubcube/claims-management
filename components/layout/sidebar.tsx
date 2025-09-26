@@ -40,15 +40,15 @@ function LogoIcon({ className, animated = false }: { className?: string; animate
         style={{ animationDuration: animated ? "8s" : undefined }}
       >
         {/* Outer ring */}
-        <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="3" className="text-primary" />
+        <circle cx="50" cy="50" r="45" fill="none" stroke="#097778" strokeWidth="3" className="text-primary" />
 
         {/* Globe */}
-        <circle cx="50" cy="50" r="30" fill="currentColor" className="text-primary/20" />
+        <circle cx="50" cy="50" r="30" fill="#e6f1f1" className="text-primary/20" />
 
         {/* Continents - simplified shapes */}
-        <path d="M35 35 Q45 30 55 35 Q60 40 55 45 Q45 50 35 45 Z" fill="currentColor" className="text-primary" />
-        <path d="M25 50 Q35 45 45 50 Q40 60 30 65 Q20 60 25 50 Z" fill="currentColor" className="text-primary" />
-        <path d="M60 25 Q70 20 75 30 Q70 35 65 40 Q55 35 60 25 Z" fill="currentColor" className="text-primary" />
+        <path d="M35 35 Q45 30 55 35 Q60 40 55 45 Q45 50 35 45 Z" fill="#787878" className="text-primary" />
+        <path d="M25 50 Q35 45 45 50 Q40 60 30 65 Q20 60 25 50 Z" fill="#787878" className="text-primary" />
+        <path d="M60 25 Q70 20 75 30 Q70 35 65 40 Q55 35 60 25 Z" fill="#787878" className="text-primary" />
 
         {/* Grid lines */}
         <path
@@ -100,11 +100,11 @@ export function Sidebar() {
         return (
           <Link key={item.name} href={item.href}>
             <Button
-              variant={isActive ? "default" : "ghost"}
+              variant={isActive ? "btn-green-theme" : "ghost"}
               className={cn(
                 "w-full justify-start gap-3 h-11 transition-all duration-200",
                 collapsed && "justify-center px-0",
-                isActive && "bg-primary text-primary-foreground shadow-sm",
+                isActive && "btn-green-theme text-primary-foreground shadow-sm",
                 !isActive && "hover:bg-primary/10 hover:text-primary",
               )}
             >

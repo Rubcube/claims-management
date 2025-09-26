@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/command"
 import { Search, FileText, Shield, User, BarChart3 } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useTranslation } from "@/lib/i18n"
 
 const searchResults = [
   {
@@ -49,6 +50,7 @@ const searchResults = [
 ]
 
 export function GlobalSearch() {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const router = useRouter()
 
@@ -65,13 +67,13 @@ export function GlobalSearch() {
         onClick={() => setOpen(true)}
       >
         <Search className="h-4 w-4 xl:mr-2" />
-        <span className="hidden xl:inline-flex">Buscar...</span>
+        <span className="hidden xl:inline-flex">{t("common.search")}</span>
         <kbd className="pointer-events-none absolute right-1.5 top-2 hidden h-6 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 xl:flex">
           <span className="text-xs">⌘</span>K
         </kbd>
       </Button>
       <CommandDialog open={open} onOpenChange={setOpen}>
-        <CommandInput placeholder="Digite para buscar..." />
+        <CommandInput placeholder={`${t("common.typeToSearch")}`} />
         <CommandList>
           <CommandEmpty>Nenhum resultado encontrado.</CommandEmpty>
           <CommandGroup heading="Sinistros">

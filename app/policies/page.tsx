@@ -74,9 +74,9 @@ export default function PoliciesPage() {
     const start = new Date(startDate)
     const end = new Date(endDate)
 
-    if (now < start) return "secondary" // Not started
-    if (now > end) return "destructive" // Expired
-    return "default" // Active
+    if (now < start) return "blue" // Not started
+    if (now > end) return "red" // Expired
+    return "green_darker" // Active
   }
 
   const getStatusLabel = (startDate: string, endDate: string) => {
@@ -123,12 +123,6 @@ export default function PoliciesPage() {
             <h1 className="text-3xl font-bold text-foreground">{t("policies.title")}</h1>
             <p className="text-muted-foreground">{t("policies.subtitle")}</p>
           </div>
-          <Button asChild>
-            <Link href="/policies/new">
-              <Plus className="w-4 h-4 mr-2" />
-              New Policy
-            </Link>
-          </Button>
         </div>
 
         {/* Filtros e busca */}
@@ -147,10 +141,6 @@ export default function PoliciesPage() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <Button variant="outline">
-                <Search className="w-4 h-4 mr-2" />
-                {t("common.search")}
-              </Button>
               <Button variant="outline">
                 <Filter className="w-4 h-4 mr-2" />
                 {t("common.advancedFilters")}
@@ -236,8 +226,6 @@ export default function PoliciesPage() {
                       <TableCell className="text-right">
                         <ActionsDropdown
                           viewHref={`/policies/${policy.id}`}
-                          editHref={`/policies/${policy.id}/edit`}
-                          onDelete={() => handleDelete(policy.id.toString())}
                           showActivities={false}
                         />
                       </TableCell>

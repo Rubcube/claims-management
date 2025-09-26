@@ -13,6 +13,7 @@ import { useTranslation } from "@/lib/i18n"
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
 import type { Claim } from "@/lib/types/activity"
+import { ClaimStatus, getClaimStatusLabel } from "@/lib/types/enums"
 
 export default function ClaimsPage() {
   const { t } = useTranslation()
@@ -78,13 +79,15 @@ export default function ClaimsPage() {
   const getStatusVariant = (status: string) => {
     switch (status) {
       case "Paid":
-        return "default"
-      case "Under Review":
-        return "secondary"
-      case "Open":
-        return "outline"
+        return "green_darker"
+      case "UnderReview":
+        return "yellow"
       case "Closed":
-        return "destructive"
+        return "red"
+      case "SoftClosed":
+        return "red"
+      case "Approved":
+        return "green"
       default:
         return "outline"
     }
@@ -150,10 +153,6 @@ export default function ClaimsPage() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <Button variant="outline">
-                <Search className="w-4 h-4 mr-2" />
-                {t("common.search")}
-              </Button>
               <Button variant="outline">
                 <Filter className="w-4 h-4 mr-2" />
                 {t("common.advancedFilters")}
@@ -222,7 +221,7 @@ export default function ClaimsPage() {
                       <TableCell>{claim.policy?.named_insured || "N/A"}</TableCell>
                       <TableCell>
                         <Badge className="w-full" variant={getStatusVariant(claim.status)}>
-                          {claim.status}
+                          {getClaimStatusLabel(ClaimStatus[`${claim.status}`])}
                         </Badge>
                       </TableCell>
                       <TableCell>{claim.currency || "N/A"}</TableCell>

@@ -14,6 +14,7 @@ import { useState, useEffect } from "react"
 import type { Activity } from "@/lib/types/activity"
 import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
+import { ActivityStatus, getActivityStatusLabel } from "@/lib/types/enums"
 
 export default function ActivitiesPage() {
   const { t } = useTranslation()
@@ -82,16 +83,29 @@ export default function ActivitiesPage() {
   const getStatusVariant = (status: string) => {
     switch (status) {
       case "Completed":
-        return "default"
+        return "green_darker"
       case "InProgress":
-      case "In Progress":
-        return "secondary"
-      case "Pending":
-        return "outline"
+        return "yellow"
       case "Cancelled":
-        return "destructive"
+        return "red"
       default:
         return "outline"
+    }
+  }
+
+  const getSLAVariant = (sla: number, status: string) => {
+    if (status === "Completed") {
+      return "outline"
+    }
+
+    if (sla < 0) {
+      return "red"
+    } else if (sla > 0 && sla <= 3) {
+      return "yellow"
+    } else if (sla > 3) {
+      return "green"
+    } else {
+      return "outline"
     }
   }
 
@@ -105,14 +119,22 @@ export default function ActivitiesPage() {
   }
 
   const formatDate = (dateString: string) => {
+    const options = {
+      year: 'numeric', // Full year (e.g., 2025)
+      month: 'short',  // Abbreviated month name (e.g., Sep)
+      day: 'numeric'   // Day of the month (e.g., 26)
+    };
+
     if (!dateString) return "N/A"
-    return new Date(dateString).toLocaleDateString()
+    return new Date(dateString).toLocaleDateString('en-US', options)
   }
 
   const calculateSLA = (dueDate: string) => {
-    if (!dueDate) return "N/A"
+    if (!dueDate) return 0
+
     const days = Math.ceil((new Date(dueDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
-    return `${days} days`
+
+    return days
   }
 
   if (loading) {
@@ -137,12 +159,6 @@ export default function ActivitiesPage() {
             <h1 className="text-3xl font-bold text-foreground">{t("activities.title")}</h1>
             <p className="text-muted-foreground">{t("activities.subtitle")}</p>
           </div>
-          <Button asChild>
-            <Link href="/activities/new">
-              <Plus className="w-4 h-4 mr-2" />
-              New Activity
-            </Link>
-          </Button>
         </div>
 
         {/* Filtros e busca */}
@@ -161,10 +177,6 @@ export default function ActivitiesPage() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <Button variant="outline">
-                <Search className="w-4 h-4 mr-2" />
-                {t("common.search")}
-              </Button>
               <Button variant="outline">
                 <Filter className="w-4 h-4 mr-2" />
                 {t("common.advancedFilters")}
@@ -210,21 +222,24 @@ export default function ActivitiesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Claim Number</TableHead>
-                    <TableHead>Assigned To</TableHead>
-                    <TableHead>Role</TableHead>
+                    <TableHead>Activity Title</TableHead>
+                    <TableHead>Claim Code</TableHead>
+                    <TableHead>LoB</TableHead>
+                    <TableHead>Insured</TableHead>
+                    <TableHead>Assignee</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Due Date</TableHead>
-                    <TableHead>SLA</TableHead>
+                    <TableHead>SLA Left</TableHead>
                     <TableHead className="text-right">{t("common.actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredActivities.map((activity) => (
                     <TableRow key={activity.id}>
-                      <TableCell>{activity.description || "N/A"}</TableCell>
+                      <TableCell>{activity.title || "N/A"}</TableCell>
                       <TableCell className="font-semibold">{activity.claim?.claim_number || "N/A"}</TableCell>
+                      <TableCell>{activity.claim?.product_lob || "N/A"}</TableCell>
+                      <TableCell>{activity.claim?.insured_name || "N/A"}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-4">
                           <Button variant="ghost" className="relative h-8 w-8 rounded-full">
@@ -237,14 +252,17 @@ export default function ActivitiesPage() {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>{activity.role || "N/A"}</TableCell>
                       <TableCell>
-                        <Badge className="w-full" variant={getStatusVariant(activity.status)}>
-                          {activity.status}
+                      <Badge className="w-full" variant={getStatusVariant(activity.status)}>
+                          {getActivityStatusLabel(ActivityStatus[`${activity.status}`])}
                         </Badge>
                       </TableCell>
                       <TableCell>{formatDate(activity.due_date)}</TableCell>
-                      <TableCell>{calculateSLA(activity.due_date)}</TableCell>
+                      <TableCell>
+                        <Badge className="w-full" variant={getSLAVariant(calculateSLA(activity.due_date), activity.status)}>
+                          {activity.status === "Completed" ? "0" : calculateSLA(activity.due_date)} days
+                        </Badge>
+                      </TableCell>
                       <TableCell className="text-right">
                         <ActionsDropdown
                           viewHref={`/activities/${activity.id}`}

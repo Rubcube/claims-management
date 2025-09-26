@@ -5,7 +5,7 @@
 -- =====================================================
 
 -- Step 1: Drop all tables if they exist (in reverse dependency order)
-DO $$ 
+DO $$
 BEGIN
     RAISE NOTICE 'Step 1: Dropping existing tables...';
 END $$;
@@ -18,15 +18,15 @@ DROP TABLE IF EXISTS policies CASCADE;
 DROP TABLE IF EXISTS exclusions CASCADE;
 
 -- Verify tables are dropped
-DO $$ 
+DO $$
 DECLARE
     table_count INTEGER;
 BEGIN
-    SELECT COUNT(*) INTO table_count 
-    FROM information_schema.tables 
-    WHERE table_schema = 'public' 
+    SELECT COUNT(*) INTO table_count
+    FROM information_schema.tables
+    WHERE table_schema = 'public'
     AND table_name IN ('exclusions', 'policies', 'policy_exclusions', 'claims', 'activities', 'movements');
-    
+
     IF table_count = 0 THEN
         RAISE NOTICE '✓ All tables successfully dropped';
     ELSE
@@ -38,7 +38,7 @@ END $$;
 -- Step 2: Create tables in dependency order
 -- =====================================================
 
-DO $$ 
+DO $$
 BEGIN
     RAISE NOTICE 'Step 2: Creating tables...';
 END $$;
@@ -56,7 +56,7 @@ CREATE TABLE exclusions (
 CREATE INDEX idx_exclusions_title ON exclusions(title);
 
 -- Verify exclusions table
-DO $$ 
+DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'exclusions') THEN
         RAISE NOTICE '✓ Exclusions table created successfully';
@@ -81,7 +81,7 @@ CREATE TABLE policies (
 );
 
 -- Expanded coverage types to be more realistic
-ALTER TABLE policies ADD CONSTRAINT policies_coverage_type_check 
+ALTER TABLE policies ADD CONSTRAINT policies_coverage_type_check
     CHECK (coverage_type IN ('AllRisksProperty', 'NamedPerils', 'BusinessInterruption', 'CyberLiability', 'GeneralLiability'));
 
 -- Added additional useful indexes
@@ -90,7 +90,7 @@ CREATE INDEX idx_policies_period_start ON policies(period_start);
 CREATE INDEX idx_policies_period_end ON policies(period_end);
 
 -- Verify policies table
-DO $$ 
+DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'policies') THEN
         RAISE NOTICE '✓ Policies table created successfully';
@@ -113,7 +113,7 @@ CREATE INDEX idx_policy_exclusions_policy_id ON policy_exclusions(policy_id);
 CREATE INDEX idx_policy_exclusions_exclusion_id ON policy_exclusions(exclusion_id);
 
 -- Verify policy_exclusions table
-DO $$ 
+DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'policy_exclusions') THEN
         RAISE NOTICE '✓ Policy_exclusions table created successfully';
@@ -134,25 +134,30 @@ CREATE TABLE claims (
     cause_of_loss VARCHAR(50) NOT NULL,
     coverage VARCHAR(50) NOT NULL,
     description TEXT,
+    product_lob VARCHAR(50) NOT NULL,
+    insured_name VARCHAR(150),
     created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     modified_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Add constraints for claims
-ALTER TABLE claims ADD CONSTRAINT claims_status_check 
+ALTER TABLE claims ADD CONSTRAINT claims_status_check
     CHECK (status IN ('Open', 'UnderReview', 'Approved', 'Paid', 'Closed', 'SoftClosed'));
 
-ALTER TABLE claims ADD CONSTRAINT claims_currency_check 
+ALTER TABLE claims ADD CONSTRAINT claims_currency_check
     CHECK (currency IN ('BRL', 'USD', 'GBP', 'EUR'));
 
-ALTER TABLE claims ADD CONSTRAINT claims_cause_of_loss_check 
+ALTER TABLE claims ADD CONSTRAINT claims_cause_of_loss_check
     CHECK (cause_of_loss IN ('EscapeOfWater', 'Fire', 'Theft', 'Storm', 'Flood', 'Earthquake', 'Vandalism'));
 
-ALTER TABLE claims ADD CONSTRAINT claims_coverage_check 
+ALTER TABLE claims ADD CONSTRAINT claims_coverage_check
     CHECK (coverage IN ('MaterialDamage', 'BI', 'Stock', 'Fidelity', 'Other'));
 
+ALTER TABLE claims ADD CONSTRAINT claims_product_lob_check
+    CHECK (product_lob IN ('Property', 'Engineering', 'MobileDevice', 'FinancialLines'));
+
 -- Added date validation constraint
-ALTER TABLE claims ADD CONSTRAINT claims_date_validation_check 
+ALTER TABLE claims ADD CONSTRAINT claims_date_validation_check
     CHECK (reported_date >= date_of_loss);
 
 -- Create indexes for claims
@@ -162,7 +167,7 @@ CREATE INDEX idx_claims_date_of_loss ON claims(date_of_loss);
 CREATE INDEX idx_claims_reported_date ON claims(reported_date);
 
 -- Verify claims table
-DO $$ 
+DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'claims') THEN
         RAISE NOTICE '✓ Claims table created successfully';
@@ -177,6 +182,7 @@ CREATE TABLE activities (
     claim_id INTEGER NOT NULL REFERENCES claims(id) ON DELETE CASCADE,
     role VARCHAR(50) NOT NULL,
     status VARCHAR(50) NOT NULL DEFAULT 'InProgress',
+    title VARCHAR(200),
     description TEXT,
     assigned_to VARCHAR(100),
     due_date DATE,
@@ -186,14 +192,14 @@ CREATE TABLE activities (
 );
 
 -- Add constraints for activities
-ALTER TABLE activities ADD CONSTRAINT activities_role_check 
+ALTER TABLE activities ADD CONSTRAINT activities_role_check
     CHECK (role IN ('Adjuster', 'Surveyor', 'Lawyer', 'Expert', 'Investigator'));
 
-ALTER TABLE activities ADD CONSTRAINT activities_status_check 
+ALTER TABLE activities ADD CONSTRAINT activities_status_check
     CHECK (status IN ('InProgress', 'Completed', 'Pending', 'Cancelled'));
 
 -- Added logical date constraint
-ALTER TABLE activities ADD CONSTRAINT activities_date_validation_check 
+ALTER TABLE activities ADD CONSTRAINT activities_date_validation_check
     CHECK (completed_date IS NULL OR completed_date >= due_date OR due_date IS NULL);
 
 -- Create indexes for activities
@@ -203,7 +209,7 @@ CREATE INDEX idx_activities_due_date ON activities(due_date);
 CREATE INDEX idx_activities_assigned_to ON activities(assigned_to);
 
 -- Verify activities table
-DO $$ 
+DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'activities') THEN
         RAISE NOTICE '✓ Activities table created successfully';
@@ -226,14 +232,14 @@ CREATE TABLE movements (
 );
 
 -- Add constraints for movements
-ALTER TABLE movements ADD CONSTRAINT movements_type_check 
+ALTER TABLE movements ADD CONSTRAINT movements_type_check
     CHECK (type IN ('ReserveIncrease', 'ReserveDecrease', 'Payment', 'Recovery'));
 
-ALTER TABLE movements ADD CONSTRAINT movements_coverage_check 
+ALTER TABLE movements ADD CONSTRAINT movements_coverage_check
     CHECK (coverage IN ('MaterialDamage', 'BI', 'Stock', 'Fidelity', 'Other'));
 
 -- Added amount validation constraint
-ALTER TABLE movements ADD CONSTRAINT movements_amount_check 
+ALTER TABLE movements ADD CONSTRAINT movements_amount_check
     CHECK (amount > 0);
 
 -- Create indexes for movements
@@ -243,7 +249,7 @@ CREATE INDEX idx_movements_movement_date ON movements(movement_date);
 CREATE INDEX idx_movements_coverage ON movements(coverage);
 
 -- Verify movements table
-DO $$ 
+DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'movements') THEN
         RAISE NOTICE '✓ Movements table created successfully';
@@ -256,7 +262,7 @@ END $$;
 -- Step 3: Populate tables with 10 rows each
 -- =====================================================
 
-DO $$ 
+DO $$
 BEGIN
     RAISE NOTICE 'Step 3: Populating tables with data...';
 END $$;
@@ -275,7 +281,7 @@ INSERT INTO exclusions (title, description) VALUES
 ('Employment Practices', 'Exclusion for wrongful termination, discrimination, or harassment claims');
 
 -- Verify exclusions data
-DO $$ 
+DO $$
 DECLARE
     row_count INTEGER;
 BEGIN
@@ -301,7 +307,7 @@ INSERT INTO policies (policy_number, period_start, period_end, named_insured, su
 ('POL-2024-010', '2024-10-01', '2025-09-30', 'Food Processing Corp', 1800000.00, 'BusinessInterruption', 25000, 'BND-2024-010');
 
 -- Verify policies data
-DO $$ 
+DO $$
 DECLARE
     row_count INTEGER;
 BEGIN
@@ -319,7 +325,7 @@ INSERT INTO policy_exclusions (policy_id, exclusion_id) VALUES
 (4, 6), (5, 7), (6, 8), (7, 9), (8, 10);
 
 -- Verify policy_exclusions data
-DO $$ 
+DO $$
 DECLARE
     row_count INTEGER;
 BEGIN
@@ -332,20 +338,20 @@ BEGIN
 END $$;
 
 -- 3.4: Populate claims (10 rows) - Updated with more varied data
-INSERT INTO claims (claim_number, policy_id, date_of_loss, reported_date, status, currency, cause_of_loss, coverage, description) VALUES
-('CLM-2024-001', 1, '2024-03-15', '2024-03-16', 'Open', 'USD', 'Fire', 'MaterialDamage', 'Fire damage to main production facility'),
-('CLM-2024-002', 2, '2024-04-20', '2024-04-21', 'UnderReview', 'BRL', 'EscapeOfWater', 'MaterialDamage', 'Water damage from burst pipe in warehouse'),
-('CLM-2024-003', 3, '2024-05-10', '2024-05-11', 'Approved', 'EUR', 'Theft', 'Stock', 'Theft of computer equipment from office'),
-('CLM-2024-004', 4, '2024-06-05', '2024-06-06', 'Paid', 'USD', 'Storm', 'BI', 'Business interruption due to severe storm'),
-('CLM-2024-005', 5, '2024-07-12', '2024-07-13', 'Closed', 'BRL', 'Vandalism', 'Fidelity', 'Vandalism damage to office building'),
-('CLM-2024-006', 6, '2024-08-18', '2024-08-19', 'Open', 'GBP', 'Theft', 'Other', 'Theft of delivery vehicles'),
-('CLM-2024-007', 7, '2024-09-22', '2024-09-23', 'UnderReview', 'EUR', 'Fire', 'MaterialDamage', 'Kitchen fire in hospital cafeteria'),
-('CLM-2024-008', 8, '2024-10-14', '2024-10-15', 'Approved', 'USD', 'Flood', 'Stock', 'Flooding damage to inventory'),
-('CLM-2024-009', 9, '2024-11-08', '2024-11-09', 'Open', 'BRL', 'Earthquake', 'MaterialDamage', 'Earthquake damage to construction site'),
-('CLM-2024-010', 10, '2024-12-03', '2024-12-04', 'SoftClosed', 'USD', 'Fire', 'BI', 'Production halt due to machinery fire');
+INSERT INTO claims (claim_number, policy_id, date_of_loss, reported_date, status, currency, cause_of_loss, coverage, description, product_lob, insured_name) VALUES
+('CLM-2024-001', 1, '2024-03-15', '2024-03-16', 'Open', 'USD', 'Fire', 'MaterialDamage', 'Fire damage to main production facility', 'Property', 'GigaMobile'),
+('CLM-2024-002', 2, '2024-04-20', '2024-04-21', 'UnderReview', 'BRL', 'EscapeOfWater', 'MaterialDamage', 'Water damage from burst pipe in warehouse', 'Engineering', 'GigaMobile'),
+('CLM-2024-003', 3, '2024-05-10', '2024-05-11', 'Approved', 'EUR', 'Theft', 'Stock', 'Theft of computer equipment from office', 'MobileDevice', 'GigaMobile'),
+('CLM-2024-004', 4, '2024-06-05', '2024-06-06', 'Paid', 'USD', 'Storm', 'BI', 'Business interruption due to severe storm', 'FinancialLines', 'GigaMobile'),
+('CLM-2024-005', 5, '2024-07-12', '2024-07-13', 'Closed', 'BRL', 'Vandalism', 'Fidelity', 'Vandalism damage to office building', 'Engineering', 'GigaMobile'),
+('CLM-2024-006', 6, '2024-08-18', '2024-08-19', 'Open', 'GBP', 'Theft', 'Other', 'Theft of delivery vehicles', 'MobileDevice', 'GigaMobile'),
+('CLM-2024-007', 7, '2024-09-22', '2024-09-23', 'UnderReview', 'EUR', 'Fire', 'MaterialDamage', 'Kitchen fire in hospital cafeteria', 'MobileDevice', 'GigaMobile'),
+('CLM-2024-008', 8, '2024-10-14', '2024-10-15', 'Approved', 'USD', 'Flood', 'Stock', 'Flooding damage to inventory', 'Property', 'GigaMobile'),
+('CLM-2024-009', 9, '2024-11-08', '2024-11-09', 'Open', 'BRL', 'Earthquake', 'MaterialDamage', 'Earthquake damage to construction site', 'Property', 'GigaMobile'),
+('CLM-2024-010', 10, '2024-12-03', '2024-12-04', 'SoftClosed', 'USD', 'Fire', 'BI', 'Production halt due to machinery fire', 'MobileDevice', 'GigaMobile');
 
 -- Verify claims data
-DO $$ 
+DO $$
 DECLARE
     row_count INTEGER;
 BEGIN
@@ -358,20 +364,20 @@ BEGIN
 END $$;
 
 -- 3.5: Populate activities (10 rows) - Updated with more varied roles and realistic dates
-INSERT INTO activities (claim_id, role, status, description, assigned_to, due_date, completed_date) VALUES
-(1, 'Adjuster', 'InProgress', 'Initial assessment of fire damage', 'John Smith', '2024-03-25', NULL),
-(2, 'Surveyor', 'Completed', 'Water damage survey and documentation', 'Maria Santos', '2024-04-30', '2024-05-02'),
-(3, 'Expert', 'Pending', 'IT security expert review of theft circumstances', 'David Johnson', '2024-05-20', NULL),
-(4, 'Adjuster', 'Completed', 'Business interruption loss calculation', 'Sarah Wilson', '2024-06-15', '2024-06-15'),
-(5, 'Investigator', 'InProgress', 'Investigation of vandalism incident', 'Carlos Rodriguez', '2024-07-25', NULL),
-(6, 'Lawyer', 'Pending', 'Police report review for vehicle theft', 'Emma Thompson', '2024-08-30', NULL),
-(7, 'Adjuster', 'InProgress', 'Hospital fire damage assessment', 'Michael Brown', '2024-10-05', NULL),
-(8, 'Surveyor', 'Completed', 'Inventory damage evaluation', 'Lisa Garcia', '2024-10-25', '2024-10-25'),
-(9, 'Expert', 'Pending', 'Structural engineer assessment', 'Robert Davis', '2024-11-20', NULL),
-(10, 'Adjuster', 'Completed', 'Machinery damage and BI assessment', 'Jennifer Lee', '2024-12-15', '2024-12-15');
+INSERT INTO activities (claim_id, role, status, title, description, assigned_to, due_date, completed_date) VALUES
+(1, 'Adjuster', 'InProgress', 'Initial assessment', 'Initial assessment of fire damage', 'John Smith', '2024-03-25', NULL),
+(2, 'Surveyor', 'Completed', 'Water damage', 'Water damage survey and documentation', 'Maria Santos', '2024-04-30', '2024-05-02'),
+(3, 'Expert', 'Pending', 'IT security review', 'IT security expert review of theft circumstances', 'David Johnson', '2024-05-20', NULL),
+(4, 'Adjuster', 'Completed', 'Business interruption', 'Business interruption loss calculation', 'Sarah Wilson', '2024-06-15', '2024-06-15'),
+(5, 'Investigator', 'InProgress', 'Vandalism Investigation', 'Investigation of vandalism incident', 'Carlos Rodriguez', '2024-07-25', NULL),
+(6, 'Lawyer', 'Pending', 'Police report', 'Police report review for vehicle theft', 'Emma Thompson', '2024-08-30', NULL),
+(7, 'Adjuster', 'InProgress', 'Hospital fire', 'Hospital fire damage assessment', 'Michael Brown', '2024-10-05', NULL),
+(8, 'Surveyor', 'Completed', 'Inventory', 'Inventory damage evaluation', 'Lisa Garcia', '2024-10-25', '2024-10-25'),
+(9, 'Expert', 'Pending', 'Structural engineer', 'Structural engineer assessment', 'Robert Davis', '2024-11-20', NULL),
+(10, 'Adjuster', 'Completed', 'Machinery damage', 'Machinery damage and BI assessment', 'Jennifer Lee', '2024-12-15', '2024-12-15');
 
 -- Verify activities data
-DO $$ 
+DO $$
 DECLARE
     row_count INTEGER;
 BEGIN
@@ -397,7 +403,7 @@ INSERT INTO movements (claim_id, type, coverage, amount, description, movement_d
 (10, 'ReserveDecrease', 'BI', 95000.00, 'Final reserve adjustment for machinery claim', '2024-12-12');
 
 -- Verify movements data
-DO $$ 
+DO $$
 DECLARE
     row_count INTEGER;
 BEGIN
@@ -413,7 +419,7 @@ END $$;
 -- Step 4: Final verification
 -- =====================================================
 
-DO $$ 
+DO $$
 DECLARE
     total_tables INTEGER;
     total_rows INTEGER;
@@ -421,15 +427,15 @@ DECLARE
     total_constraints INTEGER;
 BEGIN
     RAISE NOTICE 'Step 4: Final verification...';
-    
+
     -- Count tables
-    SELECT COUNT(*) INTO total_tables 
-    FROM information_schema.tables 
-    WHERE table_schema = 'public' 
+    SELECT COUNT(*) INTO total_tables
+    FROM information_schema.tables
+    WHERE table_schema = 'public'
     AND table_name IN ('exclusions', 'policies', 'policy_exclusions', 'claims', 'activities', 'movements');
-    
+
     -- Count total rows
-    SELECT 
+    SELECT
         (SELECT COUNT(*) FROM exclusions) +
         (SELECT COUNT(*) FROM policies) +
         (SELECT COUNT(*) FROM policy_exclusions) +
@@ -437,20 +443,20 @@ BEGIN
         (SELECT COUNT(*) FROM activities) +
         (SELECT COUNT(*) FROM movements)
     INTO total_rows;
-    
+
     -- Count indexes
     SELECT COUNT(*) INTO total_indexes
-    FROM pg_indexes 
-    WHERE schemaname = 'public' 
+    FROM pg_indexes
+    WHERE schemaname = 'public'
     AND tablename IN ('exclusions', 'policies', 'policy_exclusions', 'claims', 'activities', 'movements');
-    
+
     -- Count constraints
     SELECT COUNT(*) INTO total_constraints
-    FROM information_schema.table_constraints 
-    WHERE table_schema = 'public' 
+    FROM information_schema.table_constraints
+    WHERE table_schema = 'public'
     AND table_name IN ('exclusions', 'policies', 'policy_exclusions', 'claims', 'activities', 'movements')
     AND constraint_type IN ('CHECK', 'FOREIGN KEY', 'UNIQUE');
-    
+
     IF total_tables = 6 AND total_rows = 60 THEN
         RAISE NOTICE '✅ DATABASE SETUP COMPLETED SUCCESSFULLY!';
         RAISE NOTICE '   - Tables created: %', total_tables;

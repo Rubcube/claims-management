@@ -200,4 +200,9 @@
   .btn-primary:active::before {
     background: rgba(255, 255, 255, 0.2);
   }
+  .btn-green-theme {
+    background-color: #097778;
+    margin-top: 4px;
+    margin-bottom: 4px;
+  }
 }

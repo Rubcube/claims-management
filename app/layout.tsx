@@ -5,7 +5,7 @@ import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from "react"
 import { I18nProvider } from "@/lib/i18n"
 import { AuthProvider } from "@/components/auth/auth-provider"
-import "./globals.css"
+import "./styles/globals.css"
 
 const inter = Inter({
   subsets: ["latin"],

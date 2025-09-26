@@ -53,15 +53,9 @@ export default function ActivitiesPage({ params }: { params: { id: string } }) {
         {/* Header da página */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm" asChild>
-              <Link href={`/claims/${params.id}`}>
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Voltar
-              </Link>
-            </Button>
             <div>
-              <h1 className="text-3xl font-bold text-foreground">activities do claim</h1>
-              <p className="text-muted-foreground">claim {params.id} - Maria Santos</p>
+              <h1 className="text-3xl font-bold text-foreground">Activities</h1>
+              <p className="text-muted-foreground">Activity ID: {params.id}</p>
             </div>
           </div>
         </div>
@@ -71,8 +65,8 @@ export default function ActivitiesPage({ params }: { params: { id: string } }) {
           <div className="lg:col-span-2 space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Histórico de activities</CardTitle>
-                <CardDescription>Todas as activities relacionadas a este claim</CardDescription>
+                <CardTitle>History</CardTitle>
+                <CardDescription>Activities related to claim</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -86,7 +80,7 @@ export default function ActivitiesPage({ params }: { params: { id: string } }) {
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-2">
                           <h4 className="font-medium">{atividade.tipo}</h4>
-                          <Badge variant={atividade.status === "Concluída" ? "default" : "secondary"}>
+                          <Badge variant={atividade.status === "Concluída" ? "green_darker" : "secondary"}>
                             {atividade.status}
                           </Badge>
                         </div>
@@ -114,14 +108,13 @@ export default function ActivitiesPage({ params }: { params: { id: string } }) {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Plus className="w-5 h-5" />
-                  Nova Atividade
+                  New activity
                 </CardTitle>
-                <CardDescription>Adicione uma nova atividade ao claim</CardDescription>
+                <CardDescription>Add activity to claim</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="tipo">Tipo de Atividade</Label>
+                  <Label htmlFor="tipo">Type</Label>
                   <Select>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o tipo" />
